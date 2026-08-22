@@ -46,6 +46,7 @@ The other-request path also directs the customer to the human support phone line
 
 - [Embedded FAQ prompt](evidence/images/Platform_and_other_path/1-Platform_Questions_Prompt.png)
 - [Covered platform question response](evidence/images/Platform_and_other_path/2-Platform%2B_question_response.png)
+- [Uncovered platform question response](evidence/images/Platform_and_other_path/5-Uncovered_Response.png)
 - [Other-request prompt](evidence/images/Platform_and_other_path/3-OtherResponses_prompt.png)
 - [Other-request response](evidence/images/Platform_and_other_path/4-OtherResponses.png)
 - [FAQ prompt source](evidence/Files/prompts/Platform_Questions_Prompt.txt)
