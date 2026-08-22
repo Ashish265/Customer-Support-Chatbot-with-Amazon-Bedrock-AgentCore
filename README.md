@@ -200,7 +200,20 @@ aws s3 cp flow-tests.jsonl s3://test-flows121/flow-tests.jsonl --region us-east-
 
 Use `s3://test-flows121/flow-tests.jsonl` as the evaluation input file and `s3://output-results121/evaluation-results/` as the evaluation output prefix.
 
-The evaluation used Bedrock LLM-as-a-judge metrics. The recorded correctness score is `1.0` for the evaluated records, indicating that the flow responses matched the expected behavior. The flow output also shows successful ticket creation with `OPEN` status and generated ticket IDs for complete bug reports.
+The evaluation used Bedrock LLM-as-a-judge metrics. The flow produced an average correctness score of `0.8571` and an average helpfulness score of `0.9047` across 7 records. The flow output also shows successful ticket creation with `OPEN` status and generated ticket IDs for complete bug reports.
+
+## Observation
+
+The results show that 6 of 7 test cases received a correctness score of `1.0`. Complete bug reports, the covered FAQ question, the uncovered platform question, and the other-request path behaved as expected. The single correctness failure was the incomplete shipping-address bug report: the assistant asked for the missing reproduction steps, while the reference response was the classifier label `MISSING_DETAILS`. This indicates a difference between the internal classification value used for routing and the customer-facing follow-up response expected from the completed flow. The follow-up question is appropriate for the conversation, but future evaluation references should account for the final customer-facing behavior rather than requiring the internal label as the response.
+
+The AgentCore agent class was not available for this implementation. As a result, the flow uses an additional classifier for bug-report detail validation, followed by an Inline Code node and a Lambda node to transform the ticket data and create the ticket in the backend.
+
+Guardrail response testing is pending. The evaluation results and observations will be updated after the flow responses have been tested with the created guardrails.
+
+Guardrail implementation evidence:
+
+- [Guardrail creation](evidence/images/guardrail/Guardrail_creation.png)
+- [Guardrail check](evidence/images/guardrail/guardrail_check.png)
 
 ## Repository Layout
 
