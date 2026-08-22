@@ -29,6 +29,16 @@ The bug-report route uses the AgentCore managed harness. Its prompts require the
 
 The harness invokes the Lambda tool through the AgentCore Gateway. The tool persists completed reports in the `bug-report-tool-stack-bug-reports` DynamoDB table. Evidence:
 
+Deploy the tool stack with CloudFormation before configuring the Gateway:
+
+```bash
+aws cloudformation deploy \
+	--template-file cloudformation-tool.yaml \
+	--stack-name bug-report-tool-stack \
+	--capabilities CAPABILITY_NAMED_IAM \
+	--region us-east-1
+```
+
 - [Bug-report completeness classifier](evidence/Files/prompts/BUG_REPORT_DETAILS_CLASSIFIER.txt)
 - [Ticket extraction prompt](evidence/Files/prompts/Create_Ticket.txt)
 - [Follow-up question prompt](evidence/Files/prompts/Follow_Up_Question.txt)
@@ -70,6 +80,26 @@ Test definitions and flow output:
 - [S3 upload evidence](evidence/images/Testing_Evaluation/test_file_upload_s3.png)
 - [Evaluation job results](evidence/images/Testing_Evaluation/Evaluation_result_file_screenshot.png)
 - [Correctness score evidence](evidence/images/Testing_Evaluation/Screen_shot_correctness.png)
+
+Run the evaluation dataset generator from the `project/starter` directory:
+
+```bash
+python3 generate-eval-dataset.py \
+	--tests-json tests.json \
+	--flow-id KO9XI109RY \
+	--flow-alias-id BL2Y7RY77O \
+	--out-jsonl flow-tests.jsonl \
+	--region us-east-1 \
+	--enable-trace
+```
+
+Upload the generated dataset to the evaluation input location:
+
+```bash
+aws s3 cp flow-tests.jsonl s3://test-flows121/flow-tests.jsonl --region us-east-1
+```
+
+Use `s3://test-flows121/flow-tests.jsonl` as the evaluation input file and `s3://output-results121/evaluation-results/` as the evaluation output prefix.
 
 The evaluation used Bedrock LLM-as-a-judge metrics. The recorded correctness score is `1.0` for the evaluated records, indicating that the flow responses matched the expected behavior. The flow output also shows successful ticket creation with `OPEN` status and generated ticket IDs for complete bug reports.
 
