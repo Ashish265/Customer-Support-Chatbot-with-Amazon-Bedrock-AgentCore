@@ -1,0 +1,43 @@
+{
+    "flowInputNode": {
+      "nodeName": "FlowInputNode"
+    },
+    "tests": [
+      {
+        "id": "ready-1",
+        "prompt": "I want to report a bug. The checkout page freezes after I click 'Pay Now'. Steps to reproduce: add an item to cart, go to checkout, enter payment details, and click 'Pay Now'. I'm using Chrome on Windows 11.",
+        "expected": "READY_FOR_REPORT"
+      },
+      {
+        "id": "ready-2",
+        "prompt": "I'd like to create a support ticket. The order history page shows a blank screen after I click 'View Details' for a recent order. Steps to reproduce: log in, go to My Orders, select a recent order, and click 'View Details'. I'm using Safari on macOS Sonoma.",
+        "expected": "READY_FOR_REPORT"
+      },
+      {
+        "id": "missing-1",
+        "prompt": "I need to report a bug. The app crashes when I try to update my shipping address.",
+        "expected": "MISSING_DETAILS"
+      },
+      {
+        "id": "missing-2",
+        "prompt": "My payment failed during checkout.",
+        "expected": "MISSING_DETAILS"
+      },
+      {
+        "id": "faq-covered-1",
+        "prompt": "What is your return policy for damaged items?",
+        "expected": "PLATFORM_QUESTION_COVERED"
+      },
+      {
+        "id": "faq-uncovered-1",
+        "prompt": "Can you help me change the legal name on my account?",
+        "expected": "PLATFORM_QUESTION_UNCOVERED"
+      },
+      {
+        "id": "other-request-1",
+        "prompt": "I want to speak to a human agent about something else.",
+        "expected": "OTHER_REQUEST"
+      }
+    ]
+  }
+  
