@@ -2,6 +2,105 @@
 
 This project implements a customer support chatbot using an Amazon Bedrock Flow and the AgentCore managed harness. Incoming messages are classified and routed to a dedicated bug-report, platform-question, or other-request path.
 
+## End-to-End Implementation Write-Up
+
+### 1. Overview
+
+The Customer Support Chatbot automates the initial triage of customer inquiries. It classifies user inputs, routes them to the appropriate handling logic, and either answers questions directly or creates support tickets for bugs. The system uses a flow-based architecture with conditional routing and prompt-driven responses.
+
+### 2. System Components
+
+#### 2.1 Flow Input
+
+- **Purpose**: Accepts user input as text.
+- **Output**: Passes the raw input to the classification stage.
+- **Data type**: String containing the user message and optional document reference.
+
+#### 2.2 Classifier Prompt
+
+- **Purpose**: Uses a large language model (LLM) to classify the user’s intent.
+- **Input**: User message and optional document reference.
+- **Output**: One classification label: `BUG_REPORT`, `PLATFORM_QUESTION`, or `OTHER`.
+- **Implementation**: The prompt instructs the model to choose exactly one predefined category and return only that label.
+
+#### 2.3 Routing Condition
+
+The Condition node evaluates the classifier output:
+
+- `status == "PLATFORM_QUESTION"` routes to `Platform_Questions_Prompt`.
+- `status == "BUG_REPORT"` routes to `BUG_REPORT_DETAILS_CLASSIFIER`.
+- No matching condition routes to `Other Responses` as the fallback.
+
+### 3. Branch 1: Platform Questions
+
+#### 3.1 Platform Questions Prompt
+
+- **Purpose**: Answers common questions about the online shop, including orders, shipping, returns, payments, products, accounts, support, and privacy from the FAQ provided in prompt.
+- **Input**: The customer’s question.
+- **Output**: A concise answer generated using only the embedded FAQ.
+- **Flow**: Covered questions receive an FAQ answer. Questions not covered by the FAQ are redirected to human support at `1-800-123-4567`.
+
+### 4. Branch 2: Bug Reports
+
+#### 4.1 Bug Report Details Classifier
+
+- **Purpose**: Determines whether the customer has provided enough information to create a ticket.
+- **Input**: Customer message and optional document reference.
+- **Output**: `READY_FOR_REPORT` or `MISSING_DETAILS`.
+
+#### 4.2 Bug Report Status Condition
+
+- `status == "READY_FOR_REPORT"` routes to `Create_Ticket`.
+- `status != "READY_FOR_REPORT"` routes to `Follow_Up_Question`.
+
+#### 4.3 Create Ticket
+
+- **Purpose**: Creates a formal support ticket in the backend system.
+- **Input**: The customer’s bug description, reproduction steps, and environment details.
+- **Condition**: Runs only when all required details are available and the status is `READY_FOR_REPORT`.
+- **Output**: A ticket confirmation containing the created ticket information.
+
+The AgentCore managed harness invokes the Lambda tool through the AgentCore Gateway. The tool stores the completed report in the `bug-report-tool-stack-bug-reports` DynamoDB table.
+
+#### 4.4 Inline Code Node
+
+- **Purpose**: Converts the structured text returned by the `Create_Ticket` prompt into an object and builds the payload expected by the ticket-creation tool.
+- **Input**: The response from the `Create_Ticket` prompt.
+- **Output**: A `data` object containing the Bedrock action-group payload and the required `description`, `stepsToReproduce`, and `environment` fields.
+- **Flow**: Runs after `Create_Ticket` and prepares the prompt response for the Lambda node.
+
+Evidence:
+
+- [Inline Code response conversion](evidence/images/Bug%20_Report_Path/4-Inline_code_to_convert_model_response_to_object.png)
+- [Inline Code source](evidence/Files/inline_code.py)
+
+#### 4.5 Lambda Ticket-Creation Node
+
+- **Purpose**: Sends the object produced by the Inline Code node to the backend ticket-creation tool.
+- **Input**: The parsed bug-report object.
+- **Action**: Invokes the Lambda function through the AgentCore Gateway.
+- **Output**: Creates a ticket in the `bug-report-tool-stack-bug-reports` DynamoDB table and returns the ticket confirmation to the customer.
+
+The Lambda code was updated to handle the Inline Code node output. It unwraps the `data` payload from the Gateway input, validates the `messageVersion` and `create_bug_report` action, extracts `description`, `stepsToReproduce`, and `environment`, and creates the ticket in DynamoDB. It returns the new ticket ID and `OPEN` status to the flow.
+
+Evidence:
+
+- [Lambda node storing the ticket](evidence/images/Bug%20_Report_Path/6-Lambda_node_to_invoke_lamba_function_to_store_ticket.png)
+- [Updated Lambda source](evidence/Files/updated_lambda_code.py)
+
+#### 4.6 Follow-Up Question
+
+- **Purpose**: Requests one missing detail needed to complete the bug report.
+- **Trigger**: The status is `MISSING_DETAILS`.
+- **Output**: A short, customer-facing clarifying question.
+- **Flow**: After the customer replies, the bug-report details are evaluated again until the report is complete.
+
+### 5. Fallback: Other Responses
+
+- **Purpose**: Handles unrecognized, unrelated, unclear, or unsupported requests.
+- **Output**: A polite response directing the customer to the human support phone line at `1-800-123-4567`.
+- **Flow**: The fallback branch terminates at its dedicated Output node.
+
 ## Implementation Summary
 
 ### Classification and Routing
